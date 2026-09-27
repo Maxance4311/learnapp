@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <!-- Wichtig für mobile Ansicht -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>LernTracker</title>
+
+    <!-- App-Icon für iOS Home-Bildschirm (Grafikdatei im selben Ordner) -->
+    <link rel="apple-touch-icon" href="icon.png">
+    
+    <!-- Safari-UI ausblenden: Lässt die App wie eine echte iOS-App wirken -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="LernTracker">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #f2f2f7;
+            color: #1c1c1e;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            padding-bottom: 70px;
+        }
+
+        header {
+            background-color: #ffffff;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #e5e5ea;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        main {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            border-radius: 10px;
+            border: 1px solid #d1d1d6;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:active {
+            background-color: #0056b3;
+        }
+
+        /* Bottom Navigation Bar */
+        nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: #ffffff;
+            border-top: 1px solid #e5e5ea;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+        }
+
+        nav button {
+            background: none;
+            color: #8e8e93;
+            border: none;
+            font-size: 0.8rem;
+            padding: 5px;
+            width: auto;
+        }
+
+        nav button.active {
+            color: #007aff;
+            font-weight: 600;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>LernTracker</h1>
+    </header>
+
+    <main>
+        <!-- Tab 1: Lernen -->
+        <section id="tab-learn" class="tab-content active">
+            <div class="card">
+                <h2>Karteikarte hinzufügen</h2>
+                <input type="text" id="question-input" placeholder="Frage eingeben">
+                <input type="text" id="answer-input" placeholder="Antwort eingeben">
+                <button onclick="addCard()">Karte speichern</button>
+            </div>
+
+            <div class="card">
+                <h2>Lernbereich</h2>
+                <p id="card-display">Keine Karten vorhanden. Erstelle erst eine!</p>
+                <button onclick="toggleAnswer()" style="margin-top: 15px;">Antwort anzeigen</button>
+                <button onclick="nextCard()" style="margin-top: 8px; background-color: #34c759;">Nächste Karte</button>
+            </div>
+        </section>
+
+        <!-- Tab 2: Pomodoro Timer -->
+        <section id="tab-timer" class="tab-content">
+            <div class="card" style="text-align: center;">
+                <h2>Pomodoro Timer</h2>
+                <p style="font-size: 2.5rem; font-weight: bold; margin: 15px 0;" id="timer-display">25:00</p>
+                <button onclick="startTimer()">Timer starten</button>
+                <button onclick="resetTimer()" style="background-color: #ff3b30; margin-top: 8px;">Zurücksetzen</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Untere Navigationsleiste (Ohne Freundes-Tab) -->
+    <nav>
+        <button class="active" onclick="switchTab('tab-learn', this)">Lernen</button>
+        <button onclick="switchTab('tab-timer', this)">Timer</button>
+    </nav>
+
+    <script>
+        // Tab-Steuerung
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            btn.classList.add('active');
+        }
+
+        // Karteikarten-Logik (Lokal im Browser gespeichert)
+        let cards = JSON.parse(localStorage.getItem('cards')) || [];
+        let currentCardIndex = 0;
+        let showingAnswer = false;
+
+        function addCard() {
+            const q = document.getElementById('question-input').value;
+            const a = document.getElementById('answer-input').value;
+
+            if (!q || !a) return alert('Bitte Frage und Antwort ausfüllen!');
+
+            cards.push({ q, a });
+            localStorage.setItem('cards', JSON.stringify(cards));
+            
+            document.getElementById('question-input').value = '';
+            document.getElementById('answer-input').value = '';
+            
+            updateCardDisplay();
+            alert('Karteikarte gespeichert!');
+        }
+
+        function updateCardDisplay() {
+            const display = document.getElementById('card-display');
+            if (cards.length === 0) {
+                display.innerText = 'Keine Karten vorhanden. Erstelle erst eine!';
+                return;
+            }
+            const current = cards[currentCardIndex];
+            display.innerText = showingAnswer ? `A: ${current.a}` : `F: ${current.q}`;
+        }
+
+        function toggleAnswer() {
+            if (cards.length === 0) return;
+            showingAnswer = !showingAnswer;
+            updateCardDisplay();
+        }
+
+        function nextCard() {
+            if (cards.length === 0) return;
+            showingAnswer = false;
+            currentCardIndex = (currentCardIndex + 1) % cards.length;
+            updateCardDisplay();
+        }
+
+        // Timer-Logik
+        let timer;
+        let timeLeft = 1500; // 25 Minuten in Sekunden
+
+        function startTimer() {
+            clearInterval(timer);
+            timer = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    alert('Pause!');
+                } else {
+                    timeLeft--;
+                    let min = Math.floor(timeLeft / 60);
+                    let sec = timeLeft % 60;
+                    document.getElementById('timer-display').innerText = 
+                        `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            clearInterval(timer);
+            timeLeft = 1500;
+            document.getElementById('timer-display').innerText = "25:00";
+        }
+
+        // Beim Starten ausführen
+        updateCardDisplay();
+    </script>
+</body>
+</html>
